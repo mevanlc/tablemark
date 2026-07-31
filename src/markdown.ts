@@ -1,7 +1,6 @@
 import {
 	alignmentOptions,
 	columnsMinimumWidth,
-	lineEndingRegex,
 	truncationCharacter
 } from "./constants.js";
 import type { DataProfile } from "./data.js";
@@ -11,13 +10,7 @@ import type {
 	NonEmptyInputData,
 	TablemarkOptionsNormalized
 } from "./types.js";
-import {
-	getIsSomeTruncateStrategy,
-	getOverflowStrategy,
-	getStringWrapMethod,
-	pad,
-	stripLineBreaks
-} from "./utilities.js";
+import { getCellLines, getIsSomeTruncateStrategy, pad } from "./utilities.js";
 
 export const getLine = (
 	columns: string[],
@@ -55,56 +48,15 @@ export const getRow = (
 
 	const cellValues = columns.map((value, columnIndex) => {
 		const columnWidth = profile.widths[columnIndex] || 0;
-		let valueWithLineBreakStrategy = value;
-
-		switch (config.lineBreakStrategy) {
-			case "preserve": {
-				// Keep the value as is
-				break;
-			}
-			case "strip": {
-				// Replace line breaks with spaces
-				valueWithLineBreakStrategy = stripLineBreaks(value);
-				break;
-			}
-			case "truncate": {
-				if (value.includes("\n")) {
-					// Take only the first line
-					valueWithLineBreakStrategy =
-						(value.split(lineEndingRegex, 1)[0] ?? "") + truncationCharacter;
-				}
-				break;
-			}
-			default: {
-				throw new RangeError(
-					`Unknown line break strategy ${String(config.lineBreakStrategy)}`
-				);
-			}
-		}
-
-		const overflowStrategy = getOverflowStrategy(config, columnIndex, isHeader);
-		const stringWrapMethod = getStringWrapMethod(config, columnIndex);
-		const cells = stringWrapMethod(valueWithLineBreakStrategy, columnWidth);
-
-		switch (overflowStrategy) {
-			case "wrap": {
-				rowHeight = Math.max(rowHeight, cells.length);
-				return cells;
-			}
-			case "truncateStart": {
-				const lastCell = cells.at(-1) ?? "";
-				return cells.length === 1 ? cells : [truncationCharacter + lastCell];
-			}
-			case "truncateEnd": {
-				const firstCell = cells[0] ?? "";
-				return cells.length === 1 ? cells : [firstCell + truncationCharacter];
-			}
-			default: {
-				throw new RangeError(
-					`Unknown overflow strategy ${String(config.overflowStrategy)}`
-				);
-			}
-		}
+		const cells = getCellLines(
+			value,
+			columnWidth,
+			config,
+			columnIndex,
+			isHeader
+		);
+		rowHeight = Math.max(rowHeight, cells.length);
+		return cells;
 	});
 
 	let row = "";

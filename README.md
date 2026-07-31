@@ -9,6 +9,8 @@ Render arrays of objects as markdown tables, with configurable fancy output.
 - Customize text casing for column headers (using [`change-case`])
 - Auto-detect and handle [ANSI styles and Unicode characters](#optionstexthandlingstrategy)
 - Wrap or truncate long cell contents or strip line breaks
+- Optimize individual column widths to fit a complete table within a target width
+- Reformat GFM tables embedded in existing Markdown documents
 
 ## Installation
 
@@ -78,6 +80,7 @@ tablemark (input: InputData, options?: TablemarkOptions): string
   |       `headerCase`       |             `"preserve" \| ...`              | `"sentenceCase"` | Casing to use for headers derived from input object keys ([read more](#optionsheadercase)).        |
   |   `lineBreakStrategy`    |    `"preserve" \| "strip" \| "truncate"`     |   `"preserve"`   | What to do when cell content contains line breaks.                                                 |
   |       `lineEnding`       |                   `string`                   |      `"\n"`      | String used at end-of-line.                                                                        |
+  |     `maxTableWidth`      |                   `number`                   |    `Infinity`    | Maximum display width of the complete table.                                                       |
   |        `maxWidth`        |                   `number`                   |    `Infinity`    | Wrap cell text at this length.                                                                     |
   |    `overflowStrategy`    | `"wrap" \| "truncateStart" \| "truncateEnd"` |     `"wrap"`     | How to handle overflowing text in cells.                                                           |
   | `overflowHeaderStrategy` | `"wrap" \| "truncateStart" \| "truncateEnd"` |     `"wrap"`     | How to handle overflowing text in header cells.                                                    |
@@ -273,6 +276,27 @@ tablemark(
 > To output valid [GitHub Flavored Markdown](https://github.github.com/gfm/) a
 > cell must not contain newlines. Consider replacing those with `<br />` (e.g.,
 > using `options.toCellText`).
+
+### `options.maxTableWidth`
+
+Set `options.maxTableWidth` to constrain the display width of the complete
+table, including its gutters and cell padding. If the natural table is wider,
+tablemark searches the feasible integer column widths and chooses an allocation
+that minimizes the total number of physical output lines:
+
+```js
+tablemark(
+	[
+		{ name: "Alpha", description: "A long description that needs wrapping" },
+		{ name: "Beta", description: "A shorter description" }
+	],
+	{ maxTableWidth: 40, wrapWithGutters: true }
+);
+```
+
+Explicit `options.columns[].width` values remain fixed during optimization. A
+`RangeError` is thrown when the requested complete width cannot contain all
+columns at their minimum widths.
 
 ### `options.overflowHeaderStrategy`
 
@@ -584,6 +608,44 @@ tablemark(
 // | true  | Jet   |
 // |       | Li    |
 ```
+
+## Reformat existing Markdown tables
+
+```ts
+reformatMarkdownTables(
+	markdown: string,
+	options?: ReformatMarkdownOptions
+): string
+```
+
+`reformatMarkdownTables` parses GFM tables, renders them through tablemark, and
+splices only the parsed table source ranges back into the original string. Text
+outside tables—including whitespace and fenced code blocks—is left unchanged.
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+import { reformatMarkdownTables } from "tablemark";
+
+const path = "README.md";
+const markdown = await readFile(path, "utf8");
+const formatted = reformatMarkdownTables(markdown, { maxTableWidth: 80 });
+
+await writeFile(path, formatted);
+```
+
+The reformatter preserves the original line-ending style and inline Markdown
+source within cells. It defaults to `wrapWithGutters: true`, so wrapped cell
+content is emitted as additional holder rows with empty cells, and to
+`overflowHeaderStrategy: "truncateEnd"`, so the header remains immediately
+adjacent to its GFM separator row.
+
+> [!WARNING]
+> Holder rows are intentionally non-standard and lossy. A Markdown renderer
+> treats them as independent rows, and a later formatting pass cannot reliably
+> distinguish continuation rows from intentional rows containing empty cells.
+> Wrapping also operates on the Markdown source text and can split inline
+> constructs. Reformat at the desired final width and review the result when
+> cells contain complex inline markup.
 
 ## See also
 

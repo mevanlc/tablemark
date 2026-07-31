@@ -1,4 +1,5 @@
 import { columnsMinimumWidth } from "./constants.js";
+import { optimizeColumnWidths } from "./optimize.js";
 import { transformAnsiString } from "./transformAnsiString.js";
 import type {
 	Alignment,
@@ -115,6 +116,8 @@ export const getDataProfile = (
 		profile.alignments.push(align);
 		profile.widths.push(calculatedWidth);
 	}
+
+	optimizeColumnWidths(profile, config);
 
 	return profile;
 };

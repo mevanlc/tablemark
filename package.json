@@ -1,13 +1,14 @@
 {
 	"name": "tablemark",
 	"version": "0.0.0-dev",
-	"description": "Generate markdown tables from a list of objects or JSON data.",
+	"description": "Generate and reformat markdown tables from objects or JSON data.",
 	"keywords": [
 		"markdown",
 		"table",
 		"tables",
 		"json",
 		"convert",
+		"format",
 		"generate",
 		"ghfm",
 		"tableify",
@@ -41,10 +42,19 @@
 		"typescript:check": "tsgo"
 	},
 	"prettier": "@haltcase/style/prettier",
+	"pnpm": {
+		"overrides": {
+			"tsdown>rolldown": "1.0.0-beta.60"
+		}
+	},
 	"dependencies": {
 		"ansi-regex": "^6.2.2",
 		"change-case": "^5.4.4",
+		"mdast-util-from-markdown": "^2.0.3",
+		"mdast-util-gfm-table": "^2.0.0",
+		"micromark-extension-gfm-table": "^2.1.1",
 		"string-width": "^8.1.0",
+		"unist-util-visit": "^5.1.0",
 		"wordwrapjs": "^5.1.0",
 		"wrap-ansi": "^9.0.2"
 	},
@@ -58,6 +68,7 @@
 		"@commitlint/types": "^19.8.1",
 		"@haltcase/style": "^7.3.1",
 		"@octokit/types": "^14.1.0",
+		"@types/mdast": "^4.0.4",
 		"@types/node": "^24.3.1",
 		"@types/wordwrapjs": "^5.1.2",
 		"@typescript/native-preview": "7.0.0-dev.20250910.1",

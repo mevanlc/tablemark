@@ -207,6 +207,7 @@ const defaultOptions: TablemarkOptionsNormalized = {
 	headerCase: "sentenceCase",
 	lineBreakStrategy: lineBreakStrategies.preserve,
 	lineEnding: "\n",
+	maxTableWidth: Number.POSITIVE_INFINITY,
 	maxWidth: Number.POSITIVE_INFINITY,
 	overflowStrategy: overflowStrategies.wrap,
 	overflowHeaderStrategy: overflowStrategies.wrap,
@@ -305,6 +306,67 @@ export const stripLineBreaks = (
 	replacementCharacter = " "
 ): string => {
 	return text.replaceAll(lineEndingRegex, replacementCharacter);
+};
+
+/**
+ * Split a cell into the physical lines that will be emitted for a given column
+ * width.
+ */
+export const getCellLines = (
+	value: string,
+	width: number,
+	config: TablemarkOptionsNormalized,
+	columnIndex: number,
+	isHeader = false
+): string[] => {
+	let normalizedValue = value;
+
+	switch (config.lineBreakStrategy) {
+		case lineBreakStrategies.preserve: {
+			break;
+		}
+		case lineBreakStrategies.strip: {
+			normalizedValue = stripLineBreaks(value);
+			break;
+		}
+		case lineBreakStrategies.truncate: {
+			if (value.includes("\n")) {
+				normalizedValue =
+					(value.split(lineEndingRegex, 1)[0] ?? "") + truncationCharacter;
+			}
+			break;
+		}
+		default: {
+			throw new RangeError(
+				`Unknown line break strategy ${String(config.lineBreakStrategy)}`
+			);
+		}
+	}
+
+	const cells = getStringWrapMethod(config, columnIndex)(
+		normalizedValue,
+		width
+	);
+	const overflowStrategy = getOverflowStrategy(config, columnIndex, isHeader);
+
+	switch (overflowStrategy) {
+		case overflowStrategies.wrap: {
+			return cells;
+		}
+		case overflowStrategies.truncateStart: {
+			const lastCell = cells.at(-1) ?? "";
+			return cells.length === 1 ? cells : [truncationCharacter + lastCell];
+		}
+		case overflowStrategies.truncateEnd: {
+			const firstCell = cells[0] ?? "";
+			return cells.length === 1 ? cells : [firstCell + truncationCharacter];
+		}
+		default: {
+			throw new RangeError(
+				`Unknown overflow strategy ${String(overflowStrategy)}`
+			);
+		}
+	}
 };
 
 /**

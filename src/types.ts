@@ -153,6 +153,13 @@ export interface TablemarkOptions<
 	lineEnding?: string;
 
 	/**
+	 * Maximum display width of the complete table, including cell padding and
+	 * gutters. When the natural table is wider, column widths are optimized to
+	 * minimize the number of wrapped output lines.
+	 */
+	maxTableWidth?: number;
+
+	/**
 	 * Maximum content width of all columns. The default is `Infinity`, meaning
 	 * columns will fit to content width.
 	 */
@@ -232,3 +239,12 @@ export type TablemarkOptionsNormalized = Omit<
 	stringWidthMethod: (string: string) => number;
 	stringWrapMethod: (string: string, width: number) => string[];
 };
+
+/**
+ * Options for reformatting GFM tables embedded in an existing Markdown
+ * document.
+ */
+export type ReformatMarkdownOptions = Omit<
+	TablemarkOptions,
+	"headerCase" | "toHeaderTitle"
+>;
